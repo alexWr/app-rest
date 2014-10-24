@@ -1,0 +1,19 @@
+package com.example.githubapp;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.util.Log;
+
+public class ListRepos extends Activity {
+	String user;
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.listrep);
+		Bundle extras = getIntent().getExtras();
+		if (extras != null) {
+		    user = extras.getString("username");		    
+		}
+		Log.d("myLogs",user);
+		
+	}
+}

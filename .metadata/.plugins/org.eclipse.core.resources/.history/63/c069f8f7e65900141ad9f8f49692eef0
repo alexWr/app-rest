@@ -1,0 +1,186 @@
+package com.example.githubapp;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.StatusLine;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicHeader;
+import org.apache.http.protocol.HTTP;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import android.os.AsyncTask;
+import android.os.Bundle;
+import android.support.v7.app.ActionBarActivity;
+import android.util.Base64;
+import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
+
+public class MainActivity extends ActionBarActivity implements OnClickListener{	
+	EditText etLogin,etPass;
+	Button btnLogin;
+	String pass,user,result,responseString;
+	TextView tvRepos;
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_main);
+		etLogin=(EditText)findViewById(R.id.etLogin);
+		etPass=(EditText)findViewById(R.id.etPass);
+		tvRepos=(TextView)findViewById(R.id.tvRepos);
+		btnLogin = (Button) findViewById(R.id.btnLogin);
+	    btnLogin.setOnClickListener(this);	    
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		// Inflate the menu; this adds items to the action bar if it is present.
+		getMenuInflater().inflate(R.menu.main, menu);
+		return true;
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		// Handle action bar item clicks here. The action bar will
+		// automatically handle clicks on the Home/Up button, so long
+		// as you specify a parent activity in AndroidManifest.xml.
+		int id = item.getItemId();
+		if (id == R.id.action_settings) {
+			return true;
+		}
+		return super.onOptionsItemSelected(item);
+	}
+	public void onClick(View v) {		
+		switch(v.getId()){		
+    		case R.id.btnLogin:
+    			user=etLogin.getText().toString();
+    			pass=etPass.getText().toString();    			    			
+    			new RequestTask().execute();
+    			break;
+		}
+	}
+	class RequestTask extends AsyncTask<String, String, String> {    	            		    	    	    		
+		@Override
+        protected void onPreExecute() {	                            	                            
+                super.onPreExecute();
+                }
+		@Override
+	    protected String doInBackground(String... params) {
+			String result=new String("");
+			try{
+				HttpResponse response;
+				HttpClient client = new DefaultHttpClient();
+				HttpPost post = new HttpPost("https://api.github.com");				
+				post.setHeader("https://api.github.com/user", 
+						Base64.encodeToString((user+":"+pass).getBytes(), Base64.DEFAULT));				
+				JSONObject json = new JSONObject("{\"scopes\": [\"public_repo\"],\"note\": \"admin script\"}");
+				StringEntity se = new StringEntity(json.toString());				
+				se.setContentType(new BasicHeader(HTTP.CONTENT_TYPE, "application/json"));
+				post.setEntity(se);				
+				response= client.execute(post);
+				ByteArrayOutputStream out = new ByteArrayOutputStream();
+                response.getEntity().writeTo(out);
+                out.close();
+                responseString = out.toString();                    
+				/*BufferedReader reader = new BufferedReader(new InputStreamReader
+						(response.getEntity().getContent()));
+				StringBuilder sb = new StringBuilder();
+				String line = null;
+				while ((line = reader.readLine()) != null) {
+					sb.append(line + System.getProperty("line.separator"));
+				}   */ 
+				//result = response.toString();
+				Log.d("myLogs",responseString);
+			} 
+			catch (org.apache.http.client.ClientProtocolException e) {
+				result = "ClientProtocolException: " + e.getMessage();
+			} 
+			catch (IOException e) {
+				result = "IOException: " + e.getMessage();
+			} 
+			catch (Exception e) {
+				result = "Exception: " + e.getMessage();
+			}
+	        return null;
+        }
+		@Override
+        protected void onPostExecute(String result) {
+            super.onPostExecute(result);            
+            tvRepos.setTextSize(15);
+            tvRepos.setText(user+"\n");            
+        }
+	}
+	class RequestTaskRep extends AsyncTask<String, String, String>{    	
+	    @Override
+	    protected void onPreExecute()
+	    {	            	                         	       
+	    };      
+        @Override
+        protected String doInBackground(String... uri) {
+            HttpClient httpclient = new DefaultHttpClient();
+            HttpResponse response;            
+            try {
+                response = httpclient.execute(new HttpGet(uri[0]));
+                StatusLine statusLine = response.getStatusLine();
+                if(statusLine.getStatusCode() == HttpStatus.SC_OK){
+                    ByteArrayOutputStream out = new ByteArrayOutputStream();
+                    response.getEntity().writeTo(out);
+                    out.close();
+                    responseString = out.toString();                    
+                    parseDataRep(responseString);                    
+                } else{
+                    //Closes the connection.
+                    response.getEntity().getContent().close();
+                    throw new IOException(statusLine.getReasonPhrase());
+                }
+            } 
+            catch (Exception e) {               
+            }
+            return responseString;
+        }
+        @Override
+        protected void onPostExecute(String result) {
+            super.onPostExecute(result);            
+        }
+    }
+	/*void parseData5(String data) throws JSONException {    	
+    	JSONObject json_array=new JSONObject(data);    	
+    	for(int i=0; i<json_array.length();i++){    		
+    		JSONObject jsonCity=json_array.getJSONObject("city");    		    		    	
+    		JSONArray jArray=json_array.getJSONArray("list");    		
+    		for(int j=0;j<jArray.length();j++){    			
+    			JSONObject newJson=jArray.getJSONObject(j);
+    			JSONObject newJson1=newJson.getJSONObject("temp");
+        		temp5.add(newJson1.getInt("day"));        		
+        		humid5.add(newJson.getInt("humidity"));
+    		}    		    			    			    			            		                                       		    	
+    	}	    		    
+    }*/
+        void parseData5(String data) throws JSONException {    	
+        	JSONObject json_array=new JSONObject(data);    	
+        	for(int i=0; i<json_array.length();i++){    		
+        		JSONObject jsonCity=json_array.getJSONObject("city");    		    		    	
+        		JSONArray jArray=json_array.getJSONArray("list");    		
+        		for(int j=0;j<jArray.length();j++){    			
+        			JSONObject newJson=jArray.getJSONObject(j);
+        			JSONObject newJson1=newJson.getJSONObject("temp");
+            		temp5.add(newJson1.getInt("day"));        		
+            		humid5.add(newJson.getInt("humidity"));
+        		}    		    			    			    			            		                                       		    	
+        	}	    		    
+        }
+}
